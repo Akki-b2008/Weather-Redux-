@@ -6,8 +6,8 @@ import hourThunder from "../assets/hourlyImg/thunderstorm.png";
 import raincloud from "../assets/hourlyImg/raincloud.png";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   ChevronRight,
   Droplets,
@@ -17,12 +17,16 @@ import {
   Wind,
   ArrowRight,
 } from "lucide-react";
+import Loader from "../components/loader/Loader";
+import { motion } from "framer-motion";
 
 const Home = () => {
   const dispatch = useDispatch();
   const weather = useSelector((state) => state.weatherReducer.weather);
   const forecast = useSelector((state) => state.forecastReducer.forecast);
-  
+
+  const [loading, setLoading] = useState(true);
+
   function dateTime() {
     const timestamp = weather?.dt;
     const time = new Date(timestamp * 1000);
@@ -55,7 +59,13 @@ const Home = () => {
     const storedCity = JSON.parse(localStorage.getItem("city")) || "delhi";
     dispatch(asyncWeatherDetails(storedCity));
     dispatch(asyncforecastDetails(storedCity));
-  }, []);
+
+    const timer = setTimeout(() => {
+      setLoading(false); // After 3 seconds
+    }, 1300);
+
+    return () => clearTimeout(timer);
+  }, [dispatch]);
 
   const {
     register,
@@ -65,14 +75,26 @@ const Home = () => {
   } = useForm();
 
   const submitHandler = (data) => {
-    dispatch(asyncWeatherDetails(data.city));
-    dispatch(asyncforecastDetails(data.city));
+    if (data) {
+      dispatch(asyncWeatherDetails(data.city));
+      dispatch(asyncforecastDetails(data.city));
+    }
+    else 
+
+    console.log(data);
     reset();
   };
 
+  if (loading || !forecast?.list?.length) {
+    return <Loader />;
+  }
+
   return (
-    <main
-      className="pt-[1.3rem] h-full max-w-[500px] w-full  overflow-x-hidden  min-h-screen bg-gradient-to-b from-[#55b9f7] via-[#098afa] to-[#025bf6]"
+    <motion.main
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 2 }}
+      className="pt-[1.3rem]  max-w-[500px] w-full  overflow-x-hidden  min-h-screen bg-gradient-to-b from-[#55b9f7] via-[#098afa] to-[#025bf6]"
       style={{ fontFamily: "Comfortaa" }}
     >
       <section className="bg-gradient-to-b from-[#55b9f7] via-[#098afa] to-[#025bf6]">
@@ -171,125 +193,6 @@ const Home = () => {
         </div>
 
         <div className="flex justify-around overflow-x-auto py-2 px-2 gap-3">
-          {(!renderData || renderData.length === 0) && (
-            <>
-              <div
-                className="group  flex-col justify-center leading-tight p-3
-                items-center bg-[#0f0f13] border-[1px] rounded-3xl border-[#d7cdcd44] w-[300px]
-              "
-              >
-                <div>
-                  <h1 className="text-xl text-black">23.3°C</h1>
-                </div>
-
-                <div>
-                 
-                </div>
-
-                <div>
-                  <p className="text-[13px] text-[#0c0c0c] ">
-                    09:30 PM
-                  </p>
-                  <p className="text-[13px] text-[#010101] ">
-                    jul 12
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="group  flex-col justify-center leading-tight p-3
-                items-center bg-[#0f0f13] border-[1px] rounded-3xl border-[#d7cdcd44] w-[300px]
-              "
-              >
-                <div>
-                  <h1 className="text-xl text-black">23.3°C</h1>
-                </div>
-
-                <div>
-                 
-                </div>
-
-                <div>
-                  <p className="text-[13px] text-[#0c0c0c] ">
-                    09:30 PM
-                  </p>
-                  <p className="text-[13px] text-[#010101] ">
-                    jul 12
-                  </p>
-                </div>
-              </div>
-
-               <div
-                className="group  flex-col justify-center leading-tight p-3
-                items-center bg-[#0f0f13] border-[1px] rounded-3xl border-[#d7cdcd44] w-[300px]
-              "
-              >
-                <div>
-                  <h1 className="text-xl text-black">23.3°C</h1>
-                </div>
-
-                <div>
-                 
-                </div>
-
-                <div>
-                  <p className="text-[13px] text-[#0c0c0c] ">
-                    09:30 PM
-                  </p>
-                  <p className="text-[13px] text-[#010101] ">
-                    jul 12
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="group  flex-col justify-center leading-tight p-3
-                items-center bg-[#0f0f13] border-[1px] rounded-3xl border-[#d7cdcd44] w-[300px]
-              "
-              >
-                <div>
-                  <h1 className="text-xl text-black">23.3°C</h1>
-                </div>
-
-                <div>
-                 
-                </div>
-
-                <div>
-                  <p className="text-[13px] text-[#0c0c0c] ">
-                    09:30 PM
-                  </p>
-                  <p className="text-[13px] text-[#010101] ">
-                    jul 12
-                  </p>
-                </div>
-              </div>
-
-               <div
-                className="group  flex-col justify-center leading-tight p-3
-                items-center bg-[#0f0f13] border-[1px] rounded-3xl border-[#d7cdcd44] w-[300px]
-              "
-              >
-                <div>
-                  <h1 className="text-xl text-black">23.3°C</h1>
-                </div>
-
-                <div>
-                 
-                </div>
-
-                <div>
-                  <p className="text-[13px] text-[#0c0c0c] ">
-                    09:30 PM
-                  </p>
-                  <p className="text-[13px] text-[#010101] ">
-                    jul 12
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-
           {renderData?.length > 0 &&
             renderData?.map((item, index) => (
               <div
@@ -319,7 +222,7 @@ const Home = () => {
             ))}
         </div>
       </div>
-    </main>
+    </motion.main>
   );
 };
 
