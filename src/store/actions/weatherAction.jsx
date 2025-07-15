@@ -11,7 +11,6 @@ const asyncWeatherDetails = (city) => async (dispatch) => {
     localStorage.setItem("city", JSON.stringify(city));
     dispatch(loadweather(data));
   } catch (error) {
-    console.log(error.response.data.message);
     return error.response;
   }
 };

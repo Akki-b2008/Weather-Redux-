@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { asyncforecastDetails } from "../store/actions/forecastAction";
 import asyncWeatherDetails from "../store/actions/weatherAction";
-import thunder from "../assets/img/thunderT.png";
-import moon from "../assets/hourlyImg/moon.png";
-import hourThunder from "../assets/hourlyImg/thunderstorm.png";
-import raincloud from "../assets/hourlyImg/raincloud.png";
+import thunder from "../assets/img/thunder.webp";
+import getWeatherImages from "../components/DynamicImg";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +27,7 @@ const forecastDataPage = () => {
   const navigate = useNavigate();
   const weather = useSelector((state) => state.weatherReducer.weather);
   const forecast = useSelector((state) => state.forecastReducer.forecast);
+  console.log(weather);
   console.log(forecast);
 
   const [renderData, setRenderData] = useState([]);
@@ -45,56 +44,63 @@ const forecastDataPage = () => {
       grouped[date].push(item);
     });
 
-    const todayDate = new Date().toISOString().split("T")[0];    
+    const todayDate = new Date().toISOString().split("T")[0];
 
     const final = Object.keys(grouped)
-    .filter((date) => date !== todayDate)
-    .splice(0, 5)
-    .map((date) => {
-      const entries = grouped[date];
-      const totalTemp = entries.reduce((acc, curr) => acc + curr.main.temp, 0);
-      const avgTemp = totalTemp / entries.length;
+      .filter((date) => date !== todayDate)
+      .splice(0, 5)
+      .map((date) => {
+        const entries = grouped[date];
+        const totalTemp = entries.reduce(
+          (acc, curr) => acc + curr.main.temp,
+          0
+        );
+        const avgTemp = totalTemp / entries.length;
+        console.log(entries);
 
-      // Try to get 12:00 PM entry, otherwise take the middle one
-      const noonEntry =
-        entries.find((e) => e.dt_txt.includes("12:00:00")) ||
-        entries[Math.floor(entries.length / 2)];
+        // Try to get 12:00 PM entry, otherwise take the middle one
+        const noonEntry =
+          entries.find((e) => e.dt_txt.includes("12:00:00")) ||
+          entries[Math.floor(entries.length / 2)];
 
-      const dt = new Date(noonEntry.dt_txt);
-      const dateFormatted = dt.toLocaleDateString("en-US", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
+        const dt = new Date(noonEntry.dt_txt);
+        const dateFormatted = dt.toLocaleDateString("en-US", {
+          weekday: "short",
+          day: "2-digit",
+          month: "short",
+        });
+
+        return {
+          date: dateFormatted, // like "Sat, 13 Jul"
+          temp: avgTemp?.toFixed(1),
+          time: dt.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+        };
       });
+    console.log(final);
 
-      return {
-        date: dateFormatted, // like "Sat, 13 Jul"
-        temp: avgTemp?.toFixed(1),
-        time: dt.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }),
-        icon: noonEntry.weather[0].icon, // optional for icons
-        full: noonEntry, // full object if needed later
-      };
-    });
-    
-    
     return final;
   };
+
+  // console.log(dayWiseForecast());
 
   useEffect(() => {
     const storedCity = JSON.parse(localStorage.getItem("city")) || "delhi";
     dispatch(asyncWeatherDetails(storedCity));
     dispatch(asyncforecastDetails(storedCity));
+    if (loading || !forecast?.list?.length) {
+      return <Loader />;
+    }
 
     const timer = setTimeout(() => {
       setLoading(false); // After 3 seconds
     }, 1300);
 
     return () => clearTimeout(timer);
-  }, [dispatch]);
+  }, [dispatch, RotateCw]);
 
   useEffect(() => {
     if (forecast?.list?.length > 0) {
@@ -111,12 +117,21 @@ const forecastDataPage = () => {
   } = useForm();
 
   const backHandler = () => {
-    navigate(-1);
+    navigate("/");
   };
 
-  if (loading || !forecast?.list?.length) {
-    return <Loader />;
-  }
+  const refreshHandler = () => {
+    setLoading(true);
+    <Loader />
+    let currentCity = JSON.parse(localStorage.getItem("city"));
+    dispatch(asyncWeatherDetails(currentCity));
+    dispatch(asyncforecastDetails(currentCity));
+    setTimeout(() => {
+      setLoading(false);
+    }, 1300);
+  };
+
+  console.log(renderData);
 
   return (
     <motion.main
@@ -126,11 +141,13 @@ const forecastDataPage = () => {
       className=" max-w-[500px] w-full h-[100vh] overflow-x-hidden bg-black"
       style={{ fontFamily: "Comfortaa" }}
     >
-      <section className="flex flex-col justify-between pt-[1.3rem] bg-gradient-to-b from-[#55b9f7] via-[#098afa] to-[#025bf6] rounded-bl-[50px] rounded-br-[50px] h-1/2"
-       style={{
-            boxShadow: "0 100px 1px black",
-          }}>
-        <nav className=" px-4 flex justify-between items-center">
+      <section
+        className="flex flex-col justify-between pt-[1.3rem] h-fit  bg-gradient-to-b from-[#55b9f7] via-[#098afa] to-[#025bf6] rounded-bl-[50px] rounded-br-[50px] "
+        style={{
+          boxShadow: "0 100px 1px black",
+        }}
+      >
+        <nav className="px-4 py-2 flex justify-between  items-center">
           <ChevronLeft
             onClick={backHandler}
             stroke="white"
@@ -141,22 +158,25 @@ const forecastDataPage = () => {
             <Calendar size={16} stroke="white" />
             <p className="text-xl text-white mt-1">5 Days</p>
           </div>
-          <RotateCw stroke="white" className="cursor-pointer" />
+          <RotateCw
+            stroke="white"
+            className="cursor-pointer"
+            onClick={refreshHandler}
+          />
         </nav>
 
-        <div
-          className=" p-4 h-[80%] flex flex-col justify-between text-white pt-[2rem] overflow-x-hidden  "
-         
-        >
-          <div className="flex items-center">
-            <img
-              src={thunder}
-              alt="thunderStrom"
-              className="p-0 m-auto"
-              style={{
-                width: "clamp(1rem, 40vw , 8rem)",
-              }}
-            />
+        <div className=" p-4 flex flex-col text-white  overflow-x-hidden  ">
+          <div className="flex items-center justify-around">
+            <div>
+              <img
+                src={getWeatherImages(weather?.weather[0].main)}
+                alt="thunderStrom"
+                className="p-0 m-auto object-cover"
+                style={{
+                  width: "clamp(1rem, 30vw, 10rem)",
+                }}
+              />
+            </div>
 
             <div>
               <h1
@@ -164,7 +184,7 @@ const forecastDataPage = () => {
                   lineHeight: "60px",
                   fontFamily: "helvetica",
                   textAlign: "center",
-                  fontSize: "clamp(1rem, 30vw, 4rem)",
+                  fontSize: "clamp(1rem, 10vw, 3rem)",
                 }}
               >
                 {weather?.main?.temp.toFixed(1)}
@@ -175,10 +195,6 @@ const forecastDataPage = () => {
                 {weather?.weather[0]?.description}
               </h2>
             </div>
-
-            {/* <p className=" text-center text-xl text-[#e2d6d697] ">
-              {dateTime()}
-            </p> */}
           </div>
 
           <hr className="mb-3 opacity-20" />
@@ -205,7 +221,7 @@ const forecastDataPage = () => {
         </div>
       </section>
 
-      <div className="p-5 h-1/2 text-amber-50 flex flex-col gap-5 bg-black">
+      <div className="p-5  text-amber-50 flex flex-col gap-5 bg-black">
         <div className="flex flex-col justify-around">
           {renderData?.map((item, index) => (
             <div
@@ -219,9 +235,7 @@ const forecastDataPage = () => {
                 </p>
               </div>
 
-              <div>
-                <img src={raincloud} alt="" className="w-[60px] " />
-              </div>
+              {/* <div><img src={} alt="" className="w-[60px] " /></div> */}
 
               <div>
                 <h1 className="text-xl ">{item.temp}°C</h1>

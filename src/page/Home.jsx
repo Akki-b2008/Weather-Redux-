@@ -1,9 +1,5 @@
 import { asyncforecastDetails } from "../store/actions/forecastAction";
 import asyncWeatherDetails from "../store/actions/weatherAction";
-import thunder from "../assets/img/thunderT.png";
-import moon from "../assets/hourlyImg/moon.png";
-import hourThunder from "../assets/hourlyImg/thunderstorm.png";
-import raincloud from "../assets/hourlyImg/raincloud.png";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
@@ -19,13 +15,15 @@ import {
 } from "lucide-react";
 import Loader from "../components/loader/Loader";
 import { motion } from "framer-motion";
+import getWeatherImages from "../components/DynamicImg";
 
 const Home = () => {
   const dispatch = useDispatch();
   const weather = useSelector((state) => state.weatherReducer.weather);
   const forecast = useSelector((state) => state.forecastReducer.forecast);
-
+  
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("city not found");
 
   function dateTime() {
     const timestamp = weather?.dt;
@@ -52,6 +50,7 @@ const Home = () => {
       temp: val.main.temp.toFixed(1),
       date: datePart,
       time: timePart,
+      weatherType: val.weather[0].main,
     };
   });
 
@@ -74,15 +73,20 @@ const Home = () => {
     formState: { errors },
   } = useForm();
 
-  const submitHandler = (data) => {
-    if (data) {
-      dispatch(asyncWeatherDetails(data.city));
-      dispatch(asyncforecastDetails(data.city));
-    }
-    else 
+  const submitHandler = async (data) => {
+    const city = data?.city?.trim();
+    // if (!city) return;
+    const res1 = await dispatch(asyncWeatherDetails(city));
+    const res2 = await dispatch(asyncforecastDetails(city));
 
-    console.log(data);
-    reset();
+    if (res1?.status === 404) {
+      setErrorMsg(res1?.data?.message);
+      reset({ city: errorMsg });
+    } else {
+      setErrorMsg("");
+      reset();
+    }
+    console.log(errorMsg);
   };
 
   if (loading || !forecast?.list?.length) {
@@ -127,7 +131,7 @@ const Home = () => {
           </span>
 
           <img
-            src={thunder}
+            src={getWeatherImages(weather?.weather[0].main)}
             alt="thunderStrom"
             className="p-0 m-auto"
             style={{
@@ -179,7 +183,7 @@ const Home = () => {
         </div>
       </section>
 
-      <div className="p-5 text-amber-50 flex flex-col gap-5 bg-black h-[40vh]">
+      <div className="p-5 text-amber-50 flex flex-col gap-5 bg-black">
         <div className="flex justify-between items-center">
           <h2 className="font-[600] text-[1.7em]">Today</h2>
 
@@ -197,17 +201,19 @@ const Home = () => {
             renderData?.map((item, index) => (
               <div
                 key={index}
-                className="group flex flex-col justify-center leading-tight p-3
-                items-center bg-[#0f0f13] text-white border-[1px] rounded-3xl border-[#d7cdcd44] 
-                hover:bg-gradient-to-b hover:from-[#1598ea] hover:to-[#1568f8] 
-                hover:border-[#cfcdcd80] hover:border-[1.5px] hover:scale-105 transition-all duration-500"
+                className="group flex flex-col justify-center leading-tight p-3 items-center bg-[#0f0f13] text-white border-[1px] rounded-3xl border-[#d7cdcd44] 
+                hover:bg-gradient-to-b hover:from-[#1598ea] hover:to-[#1568f8] hover:border-[#cfcdcd80] hover:border-[1.5px] hover:scale-105 transition-all duration-500"
               >
                 <div>
                   <h1 className="text-xl ">{item.temp}°C</h1>
                 </div>
 
                 <div>
-                  <img src={raincloud} alt="" className="w-[80px] " />
+                  <img
+                    src={getWeatherImages(item.weatherType)}
+                    alt=""
+                    className="w-[80px] "
+                  />
                 </div>
 
                 <div>
