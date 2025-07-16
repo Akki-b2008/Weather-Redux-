@@ -21,9 +21,9 @@ const Home = () => {
   const dispatch = useDispatch();
   const weather = useSelector((state) => state.weatherReducer.weather);
   const forecast = useSelector((state) => state.forecastReducer.forecast);
-  
+
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState("city not found");
+  const [errorMsg, setErrorMsg] = useState("");
 
   function dateTime() {
     const timestamp = weather?.dt;
@@ -56,15 +56,19 @@ const Home = () => {
 
   useEffect(() => {
     const storedCity = JSON.parse(localStorage.getItem("city")) || "delhi";
-    dispatch(asyncWeatherDetails(storedCity));
-    dispatch(asyncforecastDetails(storedCity));
 
-    const timer = setTimeout(() => {
-      setLoading(false); // After 3 seconds
-    }, 1300);
+    if (!weather || !forecast) {
+      setLoading(true);
+      dispatch(asyncWeatherDetails(storedCity));
+      dispatch(asyncforecastDetails(storedCity));
 
-    return () => clearTimeout(timer);
-  }, [dispatch]);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1300);
+    } else {
+      setLoading(false); // immediately show
+    }
+  }, []);
 
   const {
     register,
@@ -75,18 +79,24 @@ const Home = () => {
 
   const submitHandler = async (data) => {
     const city = data?.city?.trim();
-    // if (!city) return;
-    const res1 = await dispatch(asyncWeatherDetails(city));
-    const res2 = await dispatch(asyncforecastDetails(city));
+    if (!city) return;
 
-    if (res1?.status === 404) {
-      setErrorMsg(res1?.data?.message);
-      reset({ city: errorMsg });
+    const res1 = await dispatch(asyncWeatherDetails(city));
+    dispatch(asyncforecastDetails(city));
+
+    const msg = res1?.data?.message;
+    const cod = res1?.data?.cod;
+
+    console.log(res1);
+
+    if (res1?.status === 404 || cod === "404") {
+      setErrorMsg(msg || "City not found");
+      reset({ city: "" });
+      setTimeout(() => setErrorMsg(""), 2000);
     } else {
       setErrorMsg("");
       reset();
     }
-    console.log(errorMsg);
   };
 
   if (loading || !forecast?.list?.length) {
@@ -98,10 +108,10 @@ const Home = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 2 }}
-      className="pt-[1.3rem]  max-w-[500px] w-full  overflow-x-hidden  min-h-screen bg-gradient-to-b from-[#55b9f7] via-[#098afa] to-[#025bf6]"
+      className="  max-w-[500px] w-full h-[100vh] overflow-x-hidden  bg-black"
       style={{ fontFamily: "Comfortaa" }}
     >
-      <section className="bg-gradient-to-b from-[#55b9f7] via-[#098afa] to-[#025bf6]">
+      <section className="pt-5  bg-gradient-to-b from-[#55b9f7] via-[#098afa] to-[#025bf6]">
         <nav className=" relative mx-5 flex rounded-xl justify-between items-center  bg-white/10 backdrop-blur-md  shadow-md border border-white/20">
           <div className="w-[100%] flex gap-2 items-center bg-white/20 px-3 py-2 rounded-lg border border-white/30 shadow-inner">
             <Search size="18px" className="text-white" />
@@ -119,6 +129,15 @@ const Home = () => {
           </div>
         </nav>
 
+        {errors.city && (
+          <p className="text-red-400 text-xs mt-1">
+            Please enter a valid city name
+          </p>
+        )}
+        <p className="text-[#ffda089d] text-xl mx-5 mt-2 text font-bold">
+          {errorMsg}
+        </p>
+
         <div
           className=" p-4  rounded-bl-[50px] rounded-br-[50px] text-white pt-[1.3rem] overflow-x-hidden  "
           style={{
@@ -135,7 +154,7 @@ const Home = () => {
             alt="thunderStrom"
             className="p-0 m-auto"
             style={{
-              width: "clamp(1rem, 42vw , 12rem)",
+              width: "50%",
             }}
           />
 
@@ -196,7 +215,7 @@ const Home = () => {
           </NavLink>
         </div>
 
-        <div className="flex justify-around overflow-x-auto py-2 px-2 gap-3">
+        <div className=" flex justify-around overflow-x-auto py-2 px-2 gap-3">
           {renderData?.length > 0 &&
             renderData?.map((item, index) => (
               <div
